@@ -29,6 +29,7 @@ type Post = {
     profilePicture: string;
   };
   signature: string;
+  verificationId: string;
   cid: string;
   timestamp: Date;
   replyingTo?: ReplyingToDB[];
@@ -224,7 +225,13 @@ const PostCard = ({
               </div>
             </Link>
 
-            <Dropdown urlPostId={urlPostId} content={content} />
+            <Dropdown
+              urlPostId={urlPostId}
+              content={content}
+              verificationId={post.verificationId}
+              address={post.creator.address}
+              signature={post.signature}
+            />
           </div>
 
           {replyingToPost && replyingToUsers && replyingToUsers.length ? (

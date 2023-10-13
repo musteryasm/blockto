@@ -9,9 +9,15 @@ type Content = {
 const Dropdown = ({
   urlPostId,
   content,
+  verificationId,
+  address,
+  signature,
 }: {
   urlPostId: string;
   content: Content;
+  verificationId: string;
+  address: string;
+  signature: string;
 }) => {
   const extractCIDFromUrlPostId = (urlPostId: string): string => {
     const parts = urlPostId.split('post');
@@ -22,7 +28,25 @@ const Dropdown = ({
     return `https://ipfs.io/ipfs/${cid}`;
   };
 
-  // changed the link from blockto to ipfs
+  const getVerificationUrl = (verificationId: string) => {
+    const { protocol, hostname } = window.location;
+
+    if (hostname.includes('localhost')) {
+      return `${protocol}//${hostname}:3000/${verificationId}`;
+    } else {
+      return `https://verify.${hostname}/${verificationId}`;
+    }
+  };
+
+  const getVerificationData = () => {
+    const verificationData = {
+      cid: extractCIDFromUrlPostId(urlPostId),
+      address,
+      signature,
+      verificationId,
+    };
+    return JSON.stringify(verificationData);
+  };
 
   return (
     <div className="ml-auto">
@@ -35,8 +59,30 @@ const Dropdown = ({
         </label>
         <ul
           tabIndex={0}
-          className="dropdown-content menu rounded-box w-40 bg-base-100 p-2 shadow-lg shadow-black"
+          className="dropdown-content menu rounded-box w-44 bg-base-100 p-2 shadow-lg shadow-black"
         >
+          <li>
+            <button
+              className="text-start text-xs"
+              onClick={() =>
+                navigator.clipboard.writeText(
+                  getVerificationUrl(verificationId)
+                )
+              }
+            >
+              Copy Verification Link
+            </button>
+          </li>
+          <li>
+            <button
+              className="text-start text-xs"
+              onClick={() =>
+                navigator.clipboard.writeText(getVerificationData())
+              }
+            >
+              Copy Verification Data
+            </button>
+          </li>
           <li>
             <button
               className="text-start text-xs"
@@ -46,19 +92,7 @@ const Dropdown = ({
                 )
               }
             >
-              Copy Link
-            </button>
-          </li>
-          <li>
-            <button
-              className="text-start text-xs"
-              onClick={() =>
-                navigator.clipboard.writeText(
-                  extractCIDFromUrlPostId(urlPostId)
-                )
-              }
-            >
-              Copy CID
+              Copy IPFS Link
             </button>
           </li>
           <li>

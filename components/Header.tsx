@@ -24,12 +24,12 @@ const NotLoggedInHeader = ({ onLoginClick }: { onLoginClick: () => void }) => {
       <div className="flex items-center md:hidden gap-2 p-3 text-2xl">
         <Image
           src="/img/icon128.png"
-          alt="Xocial Icon"
+          alt="Blockto Icon"
           width={32}
           height={32}
           className="rounded-full"
         />
-        xocial
+        blockto
       </div>
       <div className="w-full flex items-center justify-end gap-2 p-2 h-14">
         <button
@@ -50,19 +50,16 @@ const HomeHeader = () => {
       <div className="flex items-center md:hidden gap-2 px-4 p-3 text-2xl mr-3">
         <Image
           src="/img/icon128.png"
-          alt="Xocial Icon"
+          alt="Blockto Icon"
           width={32}
           height={32}
           className="rounded-full"
         />
-        xocial
+        blockto
       </div>
       <div className="hidden md:flex w-full flex items-center justify-center gap-2 p-3 mr-16 md:mr-0 h-14">
         Home
       </div>
-      <Link href="/notifications" className="md:hidden items-center py-3 px-4">
-        <HeartIcon width={28} />
-      </Link>
     </>
   );
 };
@@ -139,7 +136,7 @@ const Header = () => {
       const message = new SigninMessage({
         domain: window.location.host,
         publicKey: wallet.publicKey?.toBase58(),
-        statement: `Sign this message to sign in to the app.`,
+        statement: `Sign this message to sign in to Blockto.`,
         nonce: csrf,
       });
 

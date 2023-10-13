@@ -3,7 +3,6 @@
 import { memo, useState, useEffect } from 'react';
 
 import PostCard from '@/components/Post/PostCard';
-// import Spinner from '@/components/Spinner';
 import { Skeleton } from '@/components/ui/skeleton';
 
 type ReplyingToDB = {
@@ -21,6 +20,7 @@ type Post = {
     profilePicture: string;
   };
   signature: string;
+  verificationId: string;
   cid: string;
   timestamp: Date;
   replyingTo?: ReplyingToDB[];

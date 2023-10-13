@@ -30,6 +30,16 @@ const PostSchema = new Schema({
     required: [true, 'Time is required'],
     immutable: true,
   },
+  signature: {
+    type: String,
+    required: [true, 'Signature is required'],
+    immutable: true,
+  },
+  verificationId: {
+    type: String,
+    required: [true, 'Verification ID is required'],
+    immutable: true,
+  },
   replyingTo: [ReplyingToSchema],
 });
 

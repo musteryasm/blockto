@@ -12,8 +12,10 @@ import {
   XCircleIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
-
 import { useSession } from 'next-auth/react';
+import { useWallet } from '@solana/wallet-adapter-react';
+import bs58 from 'bs58';
+import nacl from 'tweetnacl';
 
 type ReplyingTo = {
   address: string;
@@ -44,6 +46,7 @@ const NewPostForm: React.FC<Props> = ({
   const [isPosting, setIsPosting] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const textAreaRef = React.useRef(null);
+  const wallet = useWallet();
 
   const updateTextAreaHeight = () => {
     if (!textAreaRef.current) return;
@@ -87,12 +90,50 @@ const NewPostForm: React.FC<Props> = ({
       });
 
       const data = await response.json();
+      console.log('DATA:', data);
 
       if (data.success) {
-        console.log('Successfully posted:', data.ipfsHash);
-        setPostText('');
-        setUploadedFiles([]);
-        onSubmit?.(data);
+        if (wallet.connected && wallet.signMessage && wallet.publicKey) {
+          const message = new TextEncoder().encode(data.postCreationData.cid);
+          const signatureUint8 = await wallet.signMessage(message);
+          const signature = Buffer.from(signatureUint8).toString('hex');
+          console.log('Signature:', signature);
+
+          // const backToSignatureUint8 = new Uint8Array(Buffer.from(signature, 'hex'));
+
+          // const publicKey = wallet.publicKey.toBytes();
+
+          // const isValid = nacl.sign.detached.verify(message, backToSignatureUint8, publicKey);
+          // if (isValid) {
+          //   console.log('The signature is valid');
+          // } else {
+          //   console.log('The signature is not valid');
+          // }
+
+          const saveResponse = await fetch('/api/post/save', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              postCreationData: data.postCreationData,
+              signature,
+            }),
+          });
+
+          const saveData = await saveResponse.json();
+
+          if (saveData.success) {
+            console.log('Successfully posted:', data.postCreationData.cid);
+            setPostText('');
+            setUploadedFiles([]);
+            onSubmit?.(data);
+          } else {
+            console.error('Error saving post:', saveData.error);
+          }
+        } else {
+          console.error('Wallet not connected');
+        }
       } else {
         console.error('Error posting:', data.error);
       }

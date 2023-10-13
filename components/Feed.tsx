@@ -33,6 +33,7 @@ type Post = {
     profilePicture: string;
   };
   signature: string;
+  verificationId: string;
   cid: string;
   timestamp: Date;
   replyingTo?: ReplyingToDB[];

@@ -4,46 +4,23 @@ import { usePathname } from 'next/navigation';
 import Modal from '@/components/modal/Modal';
 import NewPostForm from '@/components/NewPostForm';
 import { useSession } from 'next-auth/react';
-import Image from 'next/image';
 
 import {
   Cog8ToothIcon,
   HomeIcon,
   InformationCircleIcon,
-  PaperAirplaneIcon,
-  HeartIcon,
-  MagnifyingGlassIcon,
+  ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 import {
   Cog8ToothIcon as Cog8ToothIconFull,
   HomeIcon as HomeIconFull,
   InformationCircleIcon as InformationCircleIconFull,
-  PaperAirplaneIcon as PaperAirplaneIconFull,
-  HeartIcon as HeartIconFull,
+  ShieldCheckIcon as ShieldCheckIconFull,
   PlusIcon,
 } from '@heroicons/react/24/solid';
 import Link from 'next/link';
-import ProxyAvatar from '@/components/Avatar';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useState } from 'react';
-
-const MagnifyingGlassIconFull = ({ className }: { className?: string }) => {
-  return (
-    <svg
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke-width="3"
-      stroke="currentColor"
-      className={className}
-    >
-      <path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-      />
-    </svg>
-  );
-};
 
 export default function NavSidebar() {
   const [showNewPostModal, setShowNewPostModal] = useState(false);
@@ -55,7 +32,6 @@ export default function NavSidebar() {
 
   const APPLICATIONS = [
     { url: '/', text: 'Home', icon: HomeIcon, activeIcon: HomeIconFull },
-    // { url: '/search', text: 'Search', icon: MagnifyingGlassIcon, activeIcon: MagnifyingGlassIconFull, className: 'lg:hidden' },
     {
       url: '/settings',
       text: 'Settings',
@@ -64,13 +40,11 @@ export default function NavSidebar() {
       activeIcon: Cog8ToothIconFull,
     },
     {
-      url: '/messages',
-      text: 'Messages',
-      loggedInOnly: true,
-      icon: PaperAirplaneIcon,
-      activeIcon: PaperAirplaneIconFull,
+      url: 'https://verify.blockto.social',
+      text: 'Verify',
+      icon: ShieldCheckIcon,
+      activeIcon: ShieldCheckIconFull,
     },
-    // { url: '/hacker', text: 'Find Teammates', loggedInOnly: true, icon: PaperAirplaneIcon, activeIcon: PaperAirplaneIconFull },
     {
       url: '/about',
       text: 'About',
@@ -84,8 +58,6 @@ export default function NavSidebar() {
       <div>
         <nav className="space-y-2 lg:space-y-1">
           <Link href="/" className="flex items-center gap-3 px-2 mb-4">
-            {/* <img className="rounded-full w-8" src="/img/icon128.png" /> */}
-            {/* <Image src="/img/icon128.png" alt="Xocial Icon" width={32} height={32} className="rounded-full" /> */}
             <Avatar className="w-8 h-8">
               <AvatarImage src="/img/icon128.png" />
               <AvatarFallback>X X</AvatarFallback>
@@ -98,19 +70,35 @@ export default function NavSidebar() {
             const Icon = isActive ? a.activeIcon : a.icon;
             return (
               <div key={index}>
-                <Link
-                  href={a.url}
-                  // className={`${a.className || ''} inline-flex w-auto flex items-center space-x-4 p-3 rounded-full transition-colors duration-200 hover:bg-neutral-900`}
-                  className={`inline-flex w-auto flex items-center space-x-4 p-3 rounded-full transition-colors duration-200 hover:bg-neutral-900`}
-                >
-                  <Icon className="w-6 h-6" />
-                  <span className={`hidden lg:flex`}>{a.text}</span>
-                  {a.text === 'messages' && (
-                    <span className="flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-red-500 rounded-full">
-                      2
-                    </span>
-                  )}
-                </Link>
+                {a.url.startsWith('http') ? (
+                  <a
+                    href={a.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`inline-flex w-auto flex items-center space-x-4 p-3 rounded-full transition-colors duration-200 hover:bg-neutral-900`}
+                  >
+                    <Icon className="w-6 h-6" />
+                    <span className={`hidden lg:flex`}>{a.text}</span>
+                    {a.text === 'Messages' && (
+                      <span className="flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-red-500 rounded-full">
+                        2
+                      </span>
+                    )}
+                  </a>
+                ) : (
+                  <Link
+                    href={a.url}
+                    className={`inline-flex w-auto flex items-center space-x-4 p-3 rounded-full transition-colors duration-200 hover:bg-neutral-900`}
+                  >
+                    <Icon className="w-6 h-6" />
+                    <span className={`hidden lg:flex`}>{a.text}</span>
+                    {a.text === 'Messages' && (
+                      <span className="flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-red-500 rounded-full">
+                        2
+                      </span>
+                    )}
+                  </Link>
+                )}
               </div>
             );
           })}
@@ -135,7 +123,6 @@ export default function NavSidebar() {
             href={`/${address}`}
             className="btn btn-ghost md:max-lg:btn-circle gap-1"
           >
-            {/* <ProxyAvatar picture={session?.user?.image || ''} width='w-8'/> */}
             <Avatar className="w-8 h-8">
               <AvatarImage
                 src={session?.user?.image || '/default.png'}
