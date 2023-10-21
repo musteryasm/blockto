@@ -276,7 +276,7 @@ const Header = () => {
 
   const handleZkSignIn = async () => {
     const nonce = await generateNonceForLogin();
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=25769832374-famecqrhe2gkebt5fvqms2263046lj96.apps.googleusercontent.com&response_type=id_token&redirect_uri=https://blockto.blurrys.in&scope=openid%20profile%20email&nonce=${nonce}`;
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=952881201008-g6bmhti204d20f20hoe7s20ktpcbj3d2.apps.googleusercontent.com&response_type=id_token&redirect_uri=http://localhost:3002&scope=openid%20profile%20email&nonce=${nonce}`;
     window.location.href = authUrl;
   };
 

@@ -119,7 +119,7 @@ export const POST = async (req) => {
       return new Response(JSON.stringify(final), { status: response.status });
     }
   } catch (error) {
-    console.log(error);
+    console.log('zklogin route error: ', error);
     return new Response(JSON.stringify({ error }), { status: 500 });
   }
 };
