@@ -9,7 +9,7 @@ import User from '@/models/user';
 export const authOptions = {
   providers: [
     CredentialsProvider({
-      name: 'Solana',
+      name: 'Sui',
       credentials: {
         message: {
           label: 'Message',
@@ -48,6 +48,7 @@ export const authOptions = {
             username: signinMessage.username,
           };
         } catch (e) {
+          console.log(e);
           return null;
         }
       },

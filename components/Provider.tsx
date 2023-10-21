@@ -1,7 +1,8 @@
-'use client'
+'use client';
 
-import { SessionProvider } from "next-auth/react";
-import { SolanaProvider } from "./SolanaProvider";
+import { SessionProvider } from 'next-auth/react';
+import { WalletProvider } from '@suiet/wallet-kit';
+import '@suiet/wallet-kit/style.css';
 
 type ProviderProps = {
   children: React.ReactNode;
@@ -10,12 +11,12 @@ type ProviderProps = {
 
 const Provider = ({ children, session }: ProviderProps) => {
   return (
-    <SolanaProvider>
+    <WalletProvider>
       <SessionProvider session={session} refetchInterval={0}>
         {children}
       </SessionProvider>
-    </SolanaProvider>
+    </WalletProvider>
   );
-}
+};
 
 export default Provider;

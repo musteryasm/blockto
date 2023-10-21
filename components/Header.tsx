@@ -7,10 +7,11 @@ import { usePathname, useParams, useRouter } from 'next/navigation';
 import React, { MouseEventHandler, useEffect } from 'react';
 import { getCsrfToken, signIn, useSession } from 'next-auth/react';
 import Image from 'next/image';
-
-import { useWalletModal } from '@solana/wallet-adapter-react-ui';
-import { useWallet } from '@solana/wallet-adapter-react';
+import Cookies from 'js-cookie';
+import { generateNonceForLogin } from '@/utils/zklogin';
+import { useWallet } from '@suiet/wallet-kit';
 import { SigninMessage } from '@/utils/SigninMessage';
+import { jwtToAddress } from '@mysten/zklogin';
 import bs58 from 'bs58';
 
 const navigateBack = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -18,7 +19,7 @@ const navigateBack = (e: React.MouseEvent<HTMLAnchorElement>) => {
   window.history.back();
 };
 
-const NotLoggedInHeader = ({ onLoginClick }: { onLoginClick: () => void }) => {
+const ZkHeader = ({ onZkLoginClick }: { onZkLoginClick: () => void }) => {
   return (
     <>
       <div className="flex items-center md:hidden gap-2 p-3 text-2xl">
@@ -34,10 +35,49 @@ const NotLoggedInHeader = ({ onLoginClick }: { onLoginClick: () => void }) => {
       <div className="w-full flex items-center justify-end gap-2 p-2 h-14">
         <button
           type="button"
+          onClick={onZkLoginClick}
+          className="btn btn-sm btn-primary text-white"
+        >
+          ZK Login
+        </button>
+      </div>
+    </>
+  );
+};
+
+const NotLoggedInHeader = ({
+  onLoginClick,
+  onZkLoginClick,
+}: {
+  onLoginClick: () => void;
+  onZkLoginClick: () => void;
+}) => {
+  return (
+    <>
+      <div className="flex items-center md:hidden gap-2 p-3 text-2xl">
+        <Image
+          src="/img/icon128.png"
+          alt="Blockto Icon"
+          width={32}
+          height={32}
+          className="rounded-full"
+        />
+        blockto
+      </div>
+      <div className="w-full flex items-center justify-end gap-2 p-2 h-14">
+        <button
+          type="button"
+          onClick={onZkLoginClick}
+          className="btn btn-sm btn-secondary text-white"
+        >
+          ZK Login
+        </button>
+        <button
+          type="button"
           onClick={onLoginClick}
           className="btn btn-sm btn-primary text-white"
         >
-          Log In
+          Wallet Login
         </button>
       </div>
     </>
@@ -68,6 +108,7 @@ const BackNavHeader = () => {
   const pathname = usePathname();
   const params = useParams();
   const { data: session } = useSession() || {};
+  console.log('Session', session);
 
   const isMyProfile =
     pathname.startsWith('/0x') &&
@@ -108,61 +149,147 @@ const Header = () => {
   const { data: session, status } = (useSession() || {}) as any;
   const loading = status === 'loading';
 
+  useEffect(() => {
+    if (window.location.hash.includes('id_token')) {
+      const tokenMatch = window.location.hash.match(/id_token=([^&]*)/);
+      if (tokenMatch && tokenMatch[1]) {
+        router.push('/');
+
+        const extendedEphemeralPublicKey = Cookies.get('publickey');
+        const maxEpoch = Cookies.get('maxepoch');
+        const jwtRandomness = Cookies.get('randomness');
+
+        const payload = {
+          jwt: tokenMatch[1],
+          extendedEphemeralPublicKey,
+          maxEpoch,
+          jwtRandomness,
+          salt: '0',
+          keyClaimName: 'sub',
+        };
+
+        const sendPostRequest = async () => {
+          try {
+            const response = await fetch('/api/zklogin', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                payload,
+                zklogin: jwtToAddress(tokenMatch[1], '0'),
+                privatekey: Cookies.get('privatekey'),
+              }),
+            });
+
+            const data = await response.json();
+            console.log('Response:', data);
+
+            const csrf = await getCsrfToken();
+            if (!csrf) return;
+
+            const userResponse = await fetch(`/api/user/${data.zklogin}`);
+
+            if (userResponse.status === 404) {
+              const message = new SigninMessage({
+                domain: window.location.host,
+                publicKey: data.zklogin,
+                statement: `Sign this message to sign in to Blockto.`,
+                nonce: csrf,
+                username: data.username,
+              });
+
+              signIn('credentials', {
+                message: JSON.stringify(message),
+                redirect: false,
+                signature: data.final.digest,
+              });
+            } else {
+              const message = new SigninMessage({
+                domain: window.location.host,
+                publicKey: data.zklogin,
+                statement: `Sign this message to sign in to Blockto.`,
+                nonce: csrf,
+              });
+
+              signIn('credentials', {
+                message: JSON.stringify(message),
+                redirect: false,
+                signature: data.final.digest,
+              });
+            }
+          } catch (error) {
+            console.error('Error sending POST request:', error);
+          }
+        };
+
+        sendPostRequest();
+      }
+    }
+  }, [router]);
+
+  console.log('Zklogin? ', Cookies.get('zklogin'));
+
   const wallet = useWallet();
-  const walletModal = useWalletModal();
 
   const handleSignIn = React.useCallback(async () => {
     try {
-      // if (!wallet.connected) {
-      //   walletModal.setVisible(true);
-      // }
+      const suiAccount = wallet.address;
+      console.log('Sui Account', suiAccount);
 
-      const solanaAccount = wallet.publicKey;
-
-      if (!solanaAccount) {
-        console.log('Solana account is not available.');
+      if (!suiAccount) {
+        console.log('Sui account is not available.');
         return;
       }
 
-      const userResponse = await fetch(`/api/user/${solanaAccount.toBase58()}`);
+      const userResponse = await fetch(`/api/user/${suiAccount}`);
       if (userResponse.status === 404) {
         router.push('/signup');
         return;
       }
 
       const csrf = await getCsrfToken();
-      if (!wallet.publicKey || !csrf || !wallet.signMessage) return;
+      if (!wallet.address || !csrf) return;
 
       const message = new SigninMessage({
         domain: window.location.host,
-        publicKey: wallet.publicKey?.toBase58(),
+        publicKey: wallet.address,
         statement: `Sign this message to sign in to Blockto.`,
         nonce: csrf,
       });
 
       const data = new TextEncoder().encode(message.prepare());
-      const signature = await wallet.signMessage(data);
-      const serializedSignature = bs58.encode(signature);
+      const result = await wallet.signMessage({
+        message: data,
+      });
+      const signature = result.signature;
 
       signIn('credentials', {
         message: JSON.stringify(message),
         redirect: false,
-        signature: serializedSignature,
+        signature,
       });
     } catch (error) {
       console.log(error);
     }
   }, [wallet, router]);
 
-  // useEffect(() => {
-  //   if (wallet.connected && status === 'unauthenticated' && !loading) {
-  //     handleSignIn();
-  //   }
-  // }, [wallet.connected, loading, handleSignIn, status]);
+  const handleZkSignIn = async () => {
+    const nonce = await generateNonceForLogin();
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=952881201008-g6bmhti204d20f20hoe7s20ktpcbj3d2.apps.googleusercontent.com&response_type=id_token&redirect_uri=http://localhost:3002&scope=openid%20profile%20email&nonce=${nonce}`;
+    window.location.href = authUrl;
+  };
 
   let content;
-  if (!session?.user?.address && wallet.connected) {
-    content = <NotLoggedInHeader onLoginClick={handleSignIn} />;
+  if (!session?.user?.address && !wallet.connected) {
+    content = <ZkHeader onZkLoginClick={handleZkSignIn} />;
+  } else if (!session?.user?.address && wallet.connected) {
+    content = (
+      <NotLoggedInHeader
+        onLoginClick={handleSignIn}
+        onZkLoginClick={handleZkSignIn}
+      />
+    );
   } else if (pathname.length <= 1) {
     content = <HomeHeader />;
   } else {

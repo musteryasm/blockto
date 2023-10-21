@@ -46,7 +46,7 @@ const Footer = () => {
           )}
         </Link>
         <a
-          href="https://verify.blockto.social"
+          href="https://verify.blockto.blurrys.in"
           target="_blank"
           rel="noopener noreferrer"
           className="flex-grow flex items-center justify-center p-3"

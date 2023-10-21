@@ -5,8 +5,7 @@ import CardContainer from '@/components/CardContainer';
 import { getCsrfToken, signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
-import { useWalletModal } from '@solana/wallet-adapter-react-ui';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useWallet } from '@suiet/wallet-kit';
 import { SigninMessage } from '@/utils/SigninMessage';
 import bs58 from 'bs58';
 
@@ -15,33 +14,33 @@ const SignupPage: FC = () => {
   const [name, setName] = useState<string>('');
 
   const wallet = useWallet();
-  const walletModal = useWalletModal();
 
   const handleSignUp = async () => {
     try {
-      if (!wallet.connected) {
-        walletModal.setVisible(true);
-      }
-
       const csrf = await getCsrfToken();
-      if (!wallet.publicKey || !csrf || !wallet.signMessage) return;
+      if (!wallet.address || !csrf) return;
 
       const message = new SigninMessage({
         domain: window.location.host,
-        publicKey: wallet.publicKey?.toBase58(),
-        statement: `Sign this message to sign in to the app.`,
+        publicKey: wallet.address,
+        statement: `Sign this message to sign in to Blockto.`,
         nonce: csrf,
         username: name,
       });
 
+      console.log('Message', message);
+
       const data = new TextEncoder().encode(message.prepare());
-      const signature = await wallet.signMessage(data);
-      const serializedSignature = bs58.encode(signature);
+      const result = await wallet.signMessage({
+        message: data,
+      });
+      const signature = result.signature;
+      console.log('Signature', signature);
 
       signIn('credentials', {
         message: JSON.stringify(message),
         redirect: false,
-        signature: serializedSignature,
+        signature,
       });
 
       router.push('/');

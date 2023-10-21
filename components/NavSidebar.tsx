@@ -40,7 +40,7 @@ export default function NavSidebar() {
       activeIcon: Cog8ToothIconFull,
     },
     {
-      url: 'https://verify.blockto.social',
+      url: 'https://verify.blockto.blurrys.in',
       text: 'Verify',
       icon: ShieldCheckIcon,
       activeIcon: ShieldCheckIconFull,

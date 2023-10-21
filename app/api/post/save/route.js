@@ -2,24 +2,13 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { connectToDB } from '@/utils/database';
 import Post from '@/models/post';
-import { Connection, PublicKey, Keypair, clusterApiUrl } from '@solana/web3.js';
-import { Program, AnchorProvider, web3, Wallet } from '@project-serum/anchor';
-import bs58 from 'bs58';
-import idl from './idl.json';
-import crypto from 'crypto';
+import { SuiClient, getFullnodeUrl } from '@mysten/sui.js/client';
+import { Ed25519Keypair } from '@mysten/sui.js/keypairs/ed25519';
+import { TransactionBlock } from '@mysten/sui.js/transactions';
 
-const connection = new Connection(clusterApiUrl('devnet'), 'processed');
-const programId = new PublicKey(process.env.SOLANA_PROGRAM_ID);
-
-const privateKeyString = process.env.SOLANA_PRIVATE_KEY;
-const privateKeyBytes = bs58.decode(privateKeyString);
-const myWallet = Keypair.fromSecretKey(privateKeyBytes);
-
-const provider = new AnchorProvider(connection, new Wallet(myWallet), {
-  preflightCommitment: 'processed',
-});
-
-const program = new Program(idl, programId, provider);
+const keypair = Ed25519Keypair.deriveKeypair(process.env.MNEMONICS);
+const client = new SuiClient({ url: getFullnodeUrl('devnet') });
+const tx = new TransactionBlock();
 
 export const POST = async (req) => {
   await connectToDB();
@@ -68,45 +57,64 @@ export const POST = async (req) => {
       );
     }
 
-    const userPublicKey = new PublicKey(session.user.address);
-    const _cid = postCreationData.cid;
-    const _sign = signature;
-    const _user = userPublicKey;
+    tx.moveCall({
+      target:
+        '0x725033e783f658a4625f46825e013a47f12ebed8f182220932dd3688c1af7cc7::blockto_sui::create_record',
+      arguments: [
+        tx.pure.string(postCreationData.cid),
+        tx.pure.string(session.user.address),
+        tx.pure.string(signature),
+      ],
+    });
 
-    const hash = crypto.createHash('sha256');
-    hash.update(_cid + _sign + userPublicKey.toString());
-    const _seed = hash.digest('hex');
+    const result = await client.signAndExecuteTransactionBlock({
+      signer: keypair,
+      transactionBlock: tx,
+    });
+    console.log({ result });
 
-    const seedBytes = Buffer.from(_seed.slice(0, 32));
+    const txn = await client.getTransactionBlock({
+      digest: result.digest,
+      options: {
+        showEffects: true,
+        showInput: true,
+        showEvents: true,
+        showObjectChanges: true,
+        showBalanceChanges: true,
+      },
+    });
 
-    const [contentAuthPda, _] = web3.PublicKey.findProgramAddressSync(
-      [seedBytes],
-      programId
-    );
+    console.log({ txn });
 
-    console.log(contentAuthPda.toString());
+    const effects = txn?.effects?.created;
+    console.log(effects);
 
-    const tx = await program.methods
-      .createContentAuth(_seed, _cid, _sign, _user)
-      .accounts({
-        authority: provider.wallet.publicKey,
-        contentAuth: contentAuthPda,
-        systemProgram: web3.SystemProgram.programId,
-      })
-      .rpc();
+    const objectId = effects[0].reference.objectId;
+    console.log(objectId);
 
-    console.log('Transaction:', tx);
+    const contentObj = await client.getObject({
+      id: objectId,
+      options: { showContent: true },
+    });
 
-    if (tx) {
+    console.log(contentObj);
+
+    const content = contentObj.data.content;
+    console.log(content);
+
+    const fields = content.fields;
+    console.log(fields);
+
+    if (txn) {
       postCreationData.signature = signature;
-      postCreationData.verificationId = contentAuthPda.toString();
+      postCreationData.verificationId = objectId;
 
       await Post.create(postCreationData);
       return new Response(
         JSON.stringify({
           success: true,
           cid: postCreationData.cid,
-          verificationId: contentAuthPda.toString(),
+          verificationId: objectId,
         }),
         { status: 200 }
       );

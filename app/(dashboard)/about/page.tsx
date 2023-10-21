@@ -24,9 +24,9 @@ export default function About() {
           signature for authenticity.
         </li>
         <li>
-          <strong>Storage on Solana Blockchain</strong>: The IPFS Content
+          <strong>Storage on Sui Blockchain</strong>: The IPFS Content
           Identifier, Creator's Address, and the Digital Signature are then
-          stored on the Solana Blockchain.
+          stored on the Sui Blockchain.
         </li>
         <li>
           <strong>Unique Verification Link</strong>: For every piece of content,

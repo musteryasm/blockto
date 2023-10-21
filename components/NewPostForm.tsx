@@ -13,7 +13,7 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { useSession } from 'next-auth/react';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useWallet } from '@suiet/wallet-kit';
 import bs58 from 'bs58';
 import nacl from 'tweetnacl';
 
@@ -93,22 +93,15 @@ const NewPostForm: React.FC<Props> = ({
       console.log('DATA:', data);
 
       if (data.success) {
-        if (wallet.connected && wallet.signMessage && wallet.publicKey) {
-          const message = new TextEncoder().encode(data.postCreationData.cid);
-          const signatureUint8 = await wallet.signMessage(message);
-          const signature = Buffer.from(signatureUint8).toString('hex');
-          console.log('Signature:', signature);
-
-          // const backToSignatureUint8 = new Uint8Array(Buffer.from(signature, 'hex'));
-
-          // const publicKey = wallet.publicKey.toBytes();
-
-          // const isValid = nacl.sign.detached.verify(message, backToSignatureUint8, publicKey);
-          // if (isValid) {
-          //   console.log('The signature is valid');
-          // } else {
-          //   console.log('The signature is not valid');
-          // }
+        if (wallet.connected) {
+          const msgBytes = new TextEncoder().encode(data.postCreationData.cid);
+          console.log(msgBytes);
+          const result = await wallet.signMessage({
+            message: msgBytes,
+          });
+          console.log(result);
+          console.log(typeof result.messageBytes);
+          console.log(typeof result.signature);
 
           const saveResponse = await fetch('/api/post/save', {
             method: 'POST',
@@ -117,7 +110,7 @@ const NewPostForm: React.FC<Props> = ({
             },
             body: JSON.stringify({
               postCreationData: data.postCreationData,
-              signature,
+              signature: result.signature,
             }),
           });
 
