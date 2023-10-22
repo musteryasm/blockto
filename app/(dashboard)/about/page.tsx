@@ -19,7 +19,7 @@ export default function About() {
           decentralized storage solution.
         </li>
         <li>
-          <strong>Digital Signature</strong>: With the help of the Phantom
+          <strong>Digital Signature</strong>: With the help of the Sui
           Wallet, each piece of content is signed, creating a unique digital
           signature for authenticity.
         </li>
